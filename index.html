@@ -101,25 +101,26 @@
 		var $ = document.querySelector.bind(document);
 		var $$ = document.querySelectorAll.bind(document);
 		let app;
+		let parseYMD = value => { let date = value.split("-"); let d = parseInt(date[2], 10), m = parseInt(date[1], 10), y = parseInt(date[0], 10); return new Date(y, m - 1, d); };
 
 		document.addEventListener('DOMContentLoaded', () => {
 			let barChartData = {
-			labels: [9,8,7,6,5,4,3,2,1,0],
-			datasets: [{
-				label: 'correct',
-				backgroundColor: 'rgb(54, 162, 235)',
-				data: [
-					10
-				]
-			},{
-				label: 'incorrect',
-				backgroundColor: 'rgb(255, 99, 132)',
-				data: [
-					5
-				]
-			}]
+				labels: [9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+				datasets: [{
+					label: 'correct',
+					backgroundColor: 'rgb(54, 162, 235)',
+					data: [
+						10
+					]
+				}, {
+					label: 'incorrect',
+					backgroundColor: 'rgb(255, 99, 132)',
+					data: [
+						5
+					]
+				}]
 
-		};
+			};
 			let init = soundfont => {
 				MIDI.loadPlugin({
 					soundfontUrl: "soundfont/",
@@ -172,8 +173,8 @@
 					},
 					newround: function () {
 						let candidate = Object.entries(this.mydata.notes).filter(o => o[1] == true).map(o => o[0]);
-						let tmp = Object.entries(MIDI.keyToNote).filter(o => candidate.filter(c => o[0].match(new RegExp(c + '[2-6]'))).length > 0);
-						let answer = tmp[getRandomInt(tmp.length)];
+						let tmp = Object.entries(MIDI.keyToNote).filter(o => candidate.filter(c => o[0].match(new RegExp(c + '[' + this.mydata.low + '-' + this.mydata.high + ']'))).length > 0&&this.mydata.ansno!=o[1]);
+						let answer = tmp[Math.floor(Math.random() * Math.floor(tmp.length))];
 						this.mydata.answercode = answer[0];
 						this.mydata.ans = answer[0].match(/(^[A-Za-z]+)\d/)[1];
 						this.mydata.ansno = answer[1];
@@ -192,9 +193,9 @@
 						MIDI.noteOn(0, this.mydata.ansno, 127, 0);
 						localStorage.setItem('mydata', JSON.stringify(this.mydata));
 					},
-					drawstat :function(){
-						barChartData.datasets[0].data=Array.from({length: 10}, (_, i) => {let d=new Date();d.setDate(d.getDate()-i);return d.toISOString().substring(0,10);} ).reverse().map(o=>this.mydata.history.filter(h=>h.d==o&&h.god=='correct').length);
-						barChartData.datasets[1].data=Array.from({length: 10}, (_, i) => {let d=new Date();d.setDate(d.getDate()-i);return d.toISOString().substring(0,10);} ).reverse().map(o=>this.mydata.history.filter(h=>h.d==o&&h.god=='incorrect').length);
+					drawstat: function () {
+						barChartData.datasets[0].data = Array.from({ length: 10 }, (_, i) => { let d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().substring(0, 10); }).reverse().map(o => this.mydata.history.filter(h => h.d == o && h.god == 'correct').length);
+						barChartData.datasets[1].data = Array.from({ length: 10 }, (_, i) => { let d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().substring(0, 10); }).reverse().map(o => this.mydata.history.filter(h => h.d == o && h.god == 'incorrect').length);
 						window.myBar.update();
 					},
 					hearagain: function () {
@@ -243,6 +244,8 @@
 							grandtotal: Object.entries(MIDI.keyToNote).reduce((a, o) => { a[o[0]] = 0; return a; }, {}),
 							grandcorrect: Object.entries(MIDI.keyToNote).reduce((a, o) => { a[o[0]] = 0; return a; }, {}),
 							history: [],
+							low: '2',
+							high: '6',
 							version: '0.0',
 						};
 						this.newround();
@@ -270,6 +273,8 @@
 							grandtotal: Object.entries(MIDI.keyToNote).reduce((a, o) => { a[o[0]] = 0; return a; }, {}),
 							grandcorrect: Object.entries(MIDI.keyToNote).reduce((a, o) => { a[o[0]] = 0; return a; }, {}),
 							history: [],
+							low: '2',
+							high: '6',
 							version: '0.0',
 						};
 						helloworld = true;
@@ -278,14 +283,12 @@
 					if (helloworld == true) {
 						this.newround();
 					}
+					this.mydata.history = this.mydata.history.filter(h => parseYMD(h.d) > new Date(new Date().getTime() - (24 * 60 * 60 * 1000) * 30));
 					localStorage.setItem('mydata', JSON.stringify(this.mydata));
 					this.drawstat();
 				}
 			});
 		});
-		function getRandomInt(max) {
-			return Math.floor(Math.random() * Math.floor(max));
-		}
 	</script>
 </head>
 
@@ -345,64 +348,78 @@
 				</div>
 			</div>
 
-			<div class="font-semibold uppercase tracking-wide text-center py-8">Options</div>
-			<div class="flex flex-wrap">
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['A']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('A')">A</div>
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Bb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('Bb')">Bb</div>
+			<div class="flex">
+				<div class="w-1/2">
+					<div class="font-semibold uppercase tracking-wide text-center py-8">Options</div>
+					<div class="flex flex-wrap">
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['A']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('A')">A</div>
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Bb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('Bb')">Bb</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['B']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('B')">B</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['C']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('C')">C</div>
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Db']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('Db')">Db</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['D']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('D')">D</div>
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Eb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('Eb')">Eb</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['E']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('E')">E</div>
+								<div
+									class="px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['B']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400 invisible">
+									B</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['F']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('F')">F</div>
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Gb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('Gb')">Gb</div>
+							</div>
+						</div>
+						<div class="w-full flex justify-center">
+							<div class="flex" style="width: 13em;">
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['G']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('G')">G</div>
+								<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Ab']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
+									v-on:click="togglenote('Ab')">Ab</div>
+							</div>
+						</div>
 					</div>
 				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['B']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('B')">B</div>
+				<div class="w-1/2">
+					<div class="font-semibold uppercase tracking-wide text-center py-8">Difficulty</div>
+					<div class="flex w-full justify-center">
+						<div>Low: <input type="number" size="2" name="autoproceed" v-model="mydata.low" /><div class="text-small font-light tracking-tight inline-block">(1-7)</div></div>
 					</div>
-				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['C']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('C')">C</div>
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Db']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('Db')">Db</div>
-					</div>
-				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['D']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('D')">D</div>
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Eb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('Eb')">Eb</div>
-					</div>
-				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['E']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('E')">E</div>
-						<div
-							class="px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['B']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400 invisible">
-							B</div>
-					</div>
-				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['F']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('F')">F</div>
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Gb']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('Gb')">Gb</div>
-					</div>
-				</div>
-				<div class="w-full flex justify-center">
-					<div class="flex" style="width: 13em;">
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['G']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('G')">G</div>
-						<div v-bind:class="['px-10 py-1 my-1 mx-1 text-sm bg-gray-300 rounded rounded-sm cursor-pointer '+(mydata.notes['Ab']==true?'bg-blue-600 text-white hover:bg-blue-700':'hover:bg-gray-400')]"
-							v-on:click="togglenote('Ab')">Ab</div>
+					<div class="flex w-full justify-center">
+						<div>High: <input type="number" size="2" name="autoproceed" v-model="mydata.high" /><div class="text-small font-light tracking-tight inline-block">(1-7)</div></div>
 					</div>
 				</div>
 			</div>
+
 			<div class="flex w-full justify-center">
 				<div><input type="checkbox" name="autoproceed" v-model="mydata.autoproceed" /><label
 						for="autoproceed">Automatically proceed to the next interval after identifying the correct
