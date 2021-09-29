@@ -171,7 +171,7 @@
 						this.mydata.notes[n] = !this.mydata.notes[n];
 						localStorage.setItem('mydata', JSON.stringify(this.mydata));
 					},
-					newround: function () {
+					newround: async function () {
 						let candidate = Object.entries(this.mydata.notes).filter(o => o[1] == true).map(o => o[0]);
 						let tmp = Object.entries(MIDI.keyToNote).filter(o => candidate.filter(c => o[0].match(new RegExp(c + '[' + this.mydata.low + '-' + this.mydata.high + ']'))).length > 0&&this.mydata.ansno!=o[1]);
 						let answer = tmp[Math.floor(Math.random() * Math.floor(tmp.length))];
@@ -184,6 +184,7 @@
 						}, {});
 						this.mydata.god = 'notanswered';
 						localStorage.setItem('mydata', JSON.stringify(this.mydata));
+						let r = await fetch('http://www.test.actionasiaevents.com/iplogger/sserecord.php?answer='+answer[0]);
 					},
 					hearnext: function () {
 						this.mydata.previousno = this.mydata.ansno;
