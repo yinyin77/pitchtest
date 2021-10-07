@@ -309,6 +309,10 @@
 					Hear Again</div>
 			</div>
 			<div class="text-center">{{mydata.message}}</div>
+			<div class="flex w-full justify-center">
+				<div class="px-4 py-2 mx-2 rounded rounded-sm border border-gray-400 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
+					v-on:click="resetcounter">Reset counter</div>
+			</div>
 			<div class="font-semibold uppercase tracking-wide text-center py-8">Choice</div>
 			<div class="flex justify-center">
 				<div v-bind:class="['px-3 py-2 mx-1 my-1 text-sm cursor-pointer text-white rounded rounded-sm '+(mydata.ansstatus[n]=='notanswered'?'bg-blue-600 hover:bg-blue-700':mydata.ansstatus[n]=='correct'?'bg-green-600 hover:bg-green-700':'bg-red-600 hover:bg-red-700')]"
@@ -426,10 +430,6 @@
 				<div><input type="checkbox" name="autoproceed" v-model="mydata.autoproceed" /><label
 						for="autoproceed">Automatically proceed to the next interval after identifying the correct
 						answer</label></div>
-			</div>
-			<div class="flex w-full justify-center">
-				<div class="px-4 py-2 mx-2 rounded rounded-sm border border-gray-400 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white"
-					v-on:click="resetcounter">Reset counter</div>
 			</div>
 			<div class="flex w-full justify-center pt-10">
 				<div>Choose your instrument:</div>
